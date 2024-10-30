@@ -7,12 +7,29 @@ struct RegistSubscriptionView: View {
     @State private var showDeleteSubscriptionSheet = false // 削除確認シートの表示状態
     
     var body: some View {
-        VStack {
+        VStack(spacing:0) {
             if share.subscriptionData.isEmpty {
                 Text("サブスクリプションが登録されていません")
                     .foregroundColor(.gray)
                     .padding()
             } else {
+                HStack {
+                    HStack(spacing:3) {
+                        Circle()
+                            .foregroundStyle(.blue)
+                            .frame(width: 10, height: 10)
+                        Text("更新継続")
+                            .bold()
+                    }
+                    HStack(spacing:3) {
+                        Circle()
+                            .foregroundStyle(.red)
+                            .frame(width: 10, height: 10)
+                        Text("更新停止")
+                            .bold()
+                    }
+                }
+                .padding(.top,5.0)
                 List {
                     ForEach(share.subscriptionData.indices, id: \.self) { index in
                         SubscriptionView(share: share, subscription: share.subscriptionData[index], index: index)
@@ -74,8 +91,11 @@ struct SubscriptionView: View {
                     HStack {
                         Text("開始日時: \(formattedDate(subscription.startDate))~")
                         Spacer()
-                        Text("\(subscription.price)円")
-                            .underline()
+                        HStack(spacing:0) {
+                            let type: String = subscription.plan == "月額制" ? "月額" : "年額"
+                            Text("(\(type))")
+                            Text("\(subscription.price)円")
+                        }
                     }
                 }
                 Spacer()

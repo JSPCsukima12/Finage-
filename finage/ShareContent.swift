@@ -400,33 +400,43 @@ class ShareContent: ObservableObject {
 
         for subscription in subscriptions {
             // サブスクリプションがアクティブであるか確認
-            if subscription.isActive {
-                // サブスクリプションの開始日時のdayを取得
-                let subscriptionDay = calendar.component(.day, from: subscription.startDate)
-                let currentDay = calendar.component(.day, from: currentDate)
+            guard subscription.isActive else { continue }
 
-                // 開始日のdayと現在の日が一致する場合に支払いを記録
-                if subscriptionDay == currentDay {
-                    // 同じ日にすでに支払いが記録されていないか確認
-                    let startOfDay = calendar.startOfDay(for: currentDate)
-                    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+            let subscriptionDay = calendar.component(.day, from: subscription.startDate)
+            let currentDay = calendar.component(.day, from: currentDate)
+            let subscriptionMonth = calendar.component(.month, from: subscription.startDate)
 
-                    let existingPayment = realm.objects(PaymentRecord.self)
-                        .filter("memo == %@ AND date >= %@ AND date < %@", subscription.name, startOfDay, endOfDay)
-                        .first
+            // 支払いを記録する条件を確認
+            let isPaymentDue: Bool
+            if subscription.plan == "月額制" {
+                isPaymentDue = subscriptionDay == currentDay
+            } else if subscription.plan == "年額制" {
+                isPaymentDue = subscriptionDay == currentDay && subscriptionMonth == calendar.component(.month, from: currentDate)
+            } else {
+                continue // その他のプランの場合はスキップ
+            }
 
-                    if existingPayment == nil {
-                        // 新しい支払い記録を追加
-                        let newPayment = PaymentRecord()
-                        newPayment.date = currentDate
-                        newPayment.type = "出金"
-                        newPayment.method = subscription.paymentMethod
-                        newPayment.amount = subscription.price
-                        newPayment.memo = subscription.name
+            // 支払いが必要な場合の処理
+            if isPaymentDue {
+                let startOfDay = calendar.startOfDay(for: currentDate)
+                let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
-                        try! realm.write {
-                            realm.add(newPayment)
-                        }
+                // 同じ日にすでに支払いが記録されていないか確認
+                let existingPayment = realm.objects(PaymentRecord.self)
+                    .filter("memo == %@ AND date >= %@ AND date < %@", subscription.name, startOfDay, endOfDay)
+                    .first
+
+                if existingPayment == nil {
+                    // 新しい支払い記録を追加
+                    let newPayment = PaymentRecord()
+                    newPayment.date = currentDate
+                    newPayment.type = "出金"
+                    newPayment.method = subscription.paymentMethod
+                    newPayment.amount = subscription.price
+                    newPayment.memo = subscription.name
+
+                    try! realm.write {
+                        realm.add(newPayment)
                     }
                 }
             }
