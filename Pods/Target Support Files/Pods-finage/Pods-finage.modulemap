@@ -1,0 +1,6 @@
+framework module Pods_finage {
+  umbrella header "Pods-finage-umbrella.h"
+
+  export *
+  module * { export * }
+}
