@@ -48,14 +48,20 @@ struct CalendarView: View {
                 .padding(.vertical, 8.0)
                 .padding(.horizontal, 10.0)
 
-                HStack {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7)) {
                     ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { day in
-                        Text(day)
-                            .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.black))
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity)
+                        VStack(spacing:4) {
+                            Text(day)
+                                .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.black))
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                            Rectangle()
+                                .frame(width:45,height:2)
+                                .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.gray))
+                        }
                     }
                 }
+                .padding(.horizontal,5.0)
 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7)) {
                     ForEach(0..<startDayOfWeek, id: \.self) { _ in
