@@ -370,7 +370,7 @@ class ShareContent: ObservableObject {
     
     func loadSubscriptions() {
         let realm = try! Realm()
-        let results = realm.objects(SubscriptionData.self)
+        let results = realm.objects(SubscriptionData.self).freeze()
         subscriptionData = Array(results)
     }
         
@@ -392,56 +392,78 @@ class ShareContent: ObservableObject {
         loadSubscriptions()
     }
     
-    func recordSubscriptionPayments() {
-        let currentDate = Date()
+    // 次回更新日を計算する関数
+    func calculateNextPaymentDate(plan: String, startDate: Date) -> Date {
         let calendar = Calendar.current
+        let currentDate = Date()
+        
+        // 次回更新日を計算
+        var nextPaymentDate = plan == "月額制" ?
+            calendar.date(byAdding: .month, value: 1, to: startDate)! :
+            calendar.date(byAdding: .year, value: 1, to: startDate)!
+        
+        // currentDateより過去の日付だった場合、未来の日付になるまで更新
+        while nextPaymentDate < currentDate {
+            nextPaymentDate = plan == "月額制" ?
+                calendar.date(byAdding: .month, value: 1, to: nextPaymentDate)! :
+                calendar.date(byAdding: .year, value: 1, to: nextPaymentDate)!
+        }
+        
+        return nextPaymentDate
+    }
+
+
+    // サブスクリプション支払いを記録する関数
+    func recordSubscriptionPayments() {
+        // Realmのインスタンスを作成
         let realm = try! Realm()
+        
+        // 日付フォーマッタを作成
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd" // 日付表示形式を指定
+        
+        // サブスクリプションデータを取得
         let subscriptions = realm.objects(SubscriptionData.self)
-
-        for subscription in subscriptions {
-            // サブスクリプションがアクティブであるか確認
-            guard subscription.isActive else { continue }
-
-            let subscriptionDay = calendar.component(.day, from: subscription.startDate)
-            let currentDay = calendar.component(.day, from: currentDate)
-            let subscriptionMonth = calendar.component(.month, from: subscription.startDate)
-
-            // 支払いを記録する条件を確認
-            let isPaymentDue: Bool
-            if subscription.plan == "月額制" {
-                isPaymentDue = subscriptionDay == currentDay
-            } else if subscription.plan == "年額制" {
-                isPaymentDue = subscriptionDay == currentDay && subscriptionMonth == calendar.component(.month, from: currentDate)
-            } else {
-                continue // その他のプランの場合はスキップ
-            }
-
-            // 支払いが必要な場合の処理
-            if isPaymentDue {
-                let startOfDay = calendar.startOfDay(for: currentDate)
-                let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-
-                // 同じ日にすでに支払いが記録されていないか確認
-                let existingPayment = realm.objects(PaymentRecord.self)
-                    .filter("memo == %@ AND date >= %@ AND date < %@", subscription.name, startOfDay, endOfDay)
-                    .first
-
-                if existingPayment == nil {
-                    // 新しい支払い記録を追加
-                    let newPayment = PaymentRecord()
-                    newPayment.date = currentDate
-                    newPayment.type = "出金"
-                    newPayment.method = subscription.paymentMethod
-                    newPayment.amount = subscription.price
-                    newPayment.memo = subscription.name
-
-                    try! realm.write {
-                        realm.add(newPayment)
-                    }
+        
+        // アクティブなサブスクリプションのみをフィルタリングして処理
+        for subscription in subscriptions where subscription.isActive {
+            let startDate = subscription.startDate
+            
+            // 次回更新日を計算
+            let nextPaymentDate = calculateNextPaymentDate(plan: subscription.plan, startDate: startDate)
+            
+            try! realm.write {
+                // 次回更新日が現在の日付と一致する場合、PaymentRecordを追加
+                if Calendar.current.isDateInToday(startDate) {
+                    let paymentRecord = PaymentRecord()
+                    paymentRecord.date = Date() // 現在の日付を設定
+                    paymentRecord.type = "出金" // 例: 出金
+                    paymentRecord.method = subscription.paymentMethod
+                    paymentRecord.amount = subscription.price
+                    paymentRecord.memo = subscription.name
+                    
+                    // ポイントを計算して設定
+                    paymentRecord.points = calculatePoints(for: subscription) // calculatePointsを呼び出す
+                    realm.add(paymentRecord) // PaymentRecordをRealmに追加
+                    subscription.startDate = nextPaymentDate
                 }
             }
+            
+            print("次回更新日(\(subscription.name)): \(dateFormatter.string(from: nextPaymentDate))")
         }
     }
+
+    
+    // サブスクリプションに基づいてポイントを計算するメソッド
+    private func calculatePoints(for subscription: SubscriptionData) -> Int {
+        guard let methodDetail = paymentMethod[subscription.paymentMethod] else { return 0 }
+        if methodDetail.baseFee == 0 {
+            return 0
+        } else {
+            return subscription.price / methodDetail.baseFee // baseFeeに基づいてポイント計算
+        }
+    }
+
 }
 
 struct CustomTextFieldWithToolbar: UIViewRepresentable {

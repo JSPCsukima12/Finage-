@@ -3,83 +3,137 @@ import RealmSwift
 
 struct RegistSubscriptionView: View {
     @ObservedObject var share: ShareContent
-    @State private var showAddSubscriptionSheet = false  // 新しいサブスクリプションを追加するシートの表示状態
-    @State private var showDeleteSubscriptionSheet = false // 削除確認シートの表示状態
-    
+    @State private var selectedSubscriptions: Set<Int> = [] // 選択されたサブスクリプションのインデックスを管理
+    @State private var isEditing = false // 編集モードの状態を管理
+    @State private var isShowingAddSubscriptionView = false // 追加するビューを表示するフラグ
+
     var body: some View {
-        VStack(spacing:0) {
+        VStack(spacing: 0) {
             if share.subscriptionData.isEmpty {
                 Text("サブスクリプションが登録されていません")
                     .foregroundColor(.gray)
                     .padding()
             } else {
-                HStack {
-                    HStack(spacing:3) {
-                        Circle()
-                            .foregroundStyle(.blue)
-                            .frame(width: 10, height: 10)
-                        Text("更新継続")
-                            .bold()
+                if isEditing {
+                    Text("\(selectedSubscriptions.count) 件選択中")
+                        .bold()
+                        .padding(.top, 5.0)
+                } else {
+                    HStack {
+                        HStack(spacing: 3) {
+                            Circle()
+                                .foregroundStyle(.blue)
+                                .frame(width: 10, height: 10)
+                            Text("更新継続")
+                                .bold()
+                        }
+                        HStack(spacing: 3) {
+                            Circle()
+                                .foregroundStyle(.red)
+                                .frame(width: 10, height: 10)
+                            Text("更新停止")
+                                .bold()
+                        }
                     }
-                    HStack(spacing:3) {
-                        Circle()
-                            .foregroundStyle(.red)
-                            .frame(width: 10, height: 10)
-                        Text("更新停止")
-                            .bold()
-                    }
+                    .padding(.top, 5.0)
                 }
-                .padding(.top,5.0)
                 List {
                     ForEach(share.subscriptionData.indices, id: \.self) { index in
-                        SubscriptionView(share: share, subscription: share.subscriptionData[index], index: index)
+                        SubscriptionView(share: share, subscription: share.subscriptionData[index], index: index, isSelected: selectedSubscriptions.contains(index), isEditing: isEditing, toggleSelection: {
+                            toggleSelection(for: index) // チェックボックスのトグルアクション
+                        })
+                    }
+                    if isEditing {
+                        Button(action: {
+                            deleteSelectedSubscriptions()
+                            share.loadSubscriptions()
+                        }) {
+                            HStack {
+                                Image(systemName:"trash.fill")
+                                Text("削除する")
+                            }
+                        }
+                        .foregroundStyle(selectedSubscriptions.count == 0 ? .gray : .red)
+                        .disabled(selectedSubscriptions.count == 0)
                     }
                 }
                 .listStyle(PlainListStyle())
             }
         }
         .navigationBarTitle("サブスク管理", displayMode: .inline)
-        .toolbarBackground(share.themeColor, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
-            if !share.subscriptionData.isEmpty { // サブスクリプションが存在する場合のみ表示
-                Button(action: {
-                    showDeleteSubscriptionSheet = true // ゴミ箱ボタンを押した時にシートを表示
-                }) {
-                    Image(systemName: "trash.fill")
-                }
-                .foregroundStyle(.red)
-            }
-            
-            // プラスアイコンのボタン
             Button(action: {
-                showAddSubscriptionSheet = true
+                isEditing.toggle() // ゴミ箱ボタンを押した時に編集モードをトグル
+            }) {
+                Image(systemName: isEditing ? "checkmark.circle.fill" : "trash.fill")
+                    .foregroundColor(isEditing ? .blue : .red)
+            }
+            Button(action: {
+                isShowingAddSubscriptionView = true // 追加ビューを表示
             }) {
                 Image(systemName: "plus")
             }
         }
-        .sheet(isPresented: $showAddSubscriptionSheet) {
-            AddSubscriptionView(share: share)
+        .sheet(isPresented: $isShowingAddSubscriptionView) {
+            AddSubscriptionView(share: share) // 追加するビューを表示
         }
-        .sheet(isPresented: $showDeleteSubscriptionSheet) {
-            DeleteSubscriptionView(share: share) // 削除確認シート
+    }
+    
+    private func deleteSelectedSubscriptions() {
+        let realm = try! Realm()
+        // トランザクションを開始
+        do {
+            try realm.write {
+                // 削除対象のオブジェクトを取得して削除
+                for index in selectedSubscriptions.sorted(by: >) { // 後ろから削除
+                    if let subscriptionToDelete = realm.object(ofType: SubscriptionData.self, forPrimaryKey: share.subscriptionData[index].id) {
+                        realm.delete(subscriptionToDelete)
+                    }
+                }
+                // 削除後、選択状態をリセット
+                selectedSubscriptions.removeAll()
+            }
+        } catch {
+            print("Error deleting subscription: \(error)")
+        }
+    }
+
+    private func toggleSelection(for index: Int) {
+        if selectedSubscriptions.contains(index) {
+            selectedSubscriptions.remove(index) // すでに選択されている場合は選択を解除
+        } else {
+            selectedSubscriptions.insert(index) // 選択されていない場合は選択する
         }
     }
 }
+
 
 struct SubscriptionView: View {
     @ObservedObject var share: ShareContent
     var subscription: SubscriptionData
     var index: Int
+    var isSelected: Bool
+    var isEditing: Bool
+    var toggleSelection: () -> Void
 
     var body: some View {
         Button(action: {
-            toggleSubscription(subscription) 
+            if isEditing {
+                toggleSelection() // 編集モードのときは選択をトグル
+            } else {
+                toggleSubscription(subscription)
+                share.loadSubscriptions()
+            }
         }) {
             HStack {
-                Circle()
-                    .foregroundStyle(subscription.isActive ? .blue : .red)
-                    .frame(width: 10, height: 10)
+                if isEditing {
+                    Image(systemName: isSelected ? "checkmark.square" : "square")
+                        .foregroundColor(isSelected ? .blue : .gray)
+                } else {
+                    Circle()
+                        .foregroundStyle(subscription.isActive ? .blue : .red)
+                        .frame(width: 10, height: 10)
+                }
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 4) {
                         Text(subscription.name)
@@ -89,9 +143,9 @@ struct SubscriptionView: View {
                         Image(systemName: share.genreToIMmageName(subscription.genre))
                     }
                     HStack {
-                        Text("開始日時: \(formattedDate(subscription.startDate))~")
+                        Text("次回更新日: \(formattedDate(subscription.startDate))")
                         Spacer()
-                        HStack(spacing:0) {
+                        HStack(spacing: 0) {
                             let type: String = subscription.plan == "月額制" ? "月額" : "年額"
                             Text("(\(type))")
                             Text("\(subscription.price)円")
@@ -113,7 +167,6 @@ struct SubscriptionView: View {
                 // 指定したサブスクリプションのisActiveをトグル
                 if let subscriptionToUpdate = realm.object(ofType: SubscriptionData.self, forPrimaryKey: subscription.id) {
                     subscriptionToUpdate.isActive.toggle()
-                    share.loadSubscriptions()
                 } else {
                     print("Error: Subscription not found in Realm")
                 }
@@ -237,10 +290,23 @@ struct AddSubscriptionView: View {
             return
         }
         
+        // 現在の日付を取得
+        let currentDate = Date()
+        
+        // next の値を分岐させる
+        let next: Date
+        if Calendar.current.isDate(currentDate, inSameDayAs: startDate) {
+            next = currentDate // startDateが今日の場合、そのままcurrentDateを使用
+        } else {
+            next = share.calculateNextPaymentDate(plan: plan[planSelection], startDate: startDate) // 今日でない場合、次回更新日を計算
+        }
+        
         // 正常な場合はサブスクリプションを追加
-        share.recordSubscriptionData(name: title, genre: genre[genreSelection], price: Int(fee) ?? 0, plan: plan[planSelection], startDate: startDate, paymentMethod: selectKey, isActive: true)
+        share.recordSubscriptionData(name: title, genre: genre[genreSelection], price: Int(fee) ?? 0, plan: plan[planSelection], startDate: next, paymentMethod: selectKey, isActive: true)
+        
         dismiss()
     }
+
     
     func sortedPaymentMethods() -> [(key: String, value: PaymentMethodDetail)] {
         return share.paymentMethod.sorted { first, second in
@@ -251,82 +317,3 @@ struct AddSubscriptionView: View {
         }
     }
 }
-
-
-
-
-struct DeleteSubscriptionView: View {
-    @ObservedObject var share: ShareContent
-    @State private var selectedSubscriptions: Set<Int> = [] // 選択されたサブスクリプションのインデックスを管理
-    @Environment(\.dismiss) var dismiss // シートを閉じるための環境変数
-    
-    var body: some View {
-        NavigationView {
-            VStack {
-                HStack {
-                    Text("\(selectedSubscriptions.count)件選択中")
-                    Spacer()
-                    Button("削除") {
-                        deleteSelectedSubscriptions(selectedSubscriptions: selectedSubscriptions) // 選択されたサブスクリプションを削除
-                    }
-                    .foregroundColor(selectedSubscriptions.isEmpty ? .gray : .red) // 選択が0の場合はgray
-                    .disabled(selectedSubscriptions.isEmpty) // 選択されていない場合は無効化
-                    
-                    Button("キャンセル") {
-                        dismiss()
-                    }
-                }
-                .padding(.top, 10)
-                .padding(.horizontal, 7.0)
-                
-                List {
-                    ForEach(share.subscriptionData.indices, id: \.self) { index in
-                        HStack {
-                            Button(action: {
-                                toggleSelection(for: index) // チェックボックスのトグルアクション
-                            }) {
-                                Image(systemName: selectedSubscriptions.contains(index) ? "checkmark.square" : "square")
-                                    .foregroundColor(selectedSubscriptions.contains(index) ? .blue : .gray)
-                            }
-                            
-                            Image(systemName: share.genreToIMmageName(share.subscriptionData[index].genre))
-                            Text(share.subscriptionData[index].name) // サブスクリプションの名前を表示
-                        }
-                    }
-                }
-                .listStyle(PlainListStyle())
-            }
-            .navigationBarTitle("サブスクリプション削除", displayMode: .inline)
-        }
-    }
-    
-    private func toggleSelection(for index: Int) {
-        if selectedSubscriptions.contains(index) {
-            selectedSubscriptions.remove(index) // すでに選択されている場合は選択を解除
-        } else {
-            selectedSubscriptions.insert(index) // 選択されていない場合は選択する
-        }
-    }
-    
-    func deleteSelectedSubscriptions(selectedSubscriptions: Set<Int>) {
-        let realm = try! Realm()
-        
-        // 削除対象のサブスクリプションを一時的に保存
-        let subscriptionsToDelete = selectedSubscriptions.compactMap { index in
-            return share.subscriptionData[index]
-        }
-        
-        // Realmのトランザクションで削除処理を行う
-        try! realm.write {
-            for subscription in subscriptionsToDelete { // 一時的に保存したサブスクリプションを削除
-                realm.delete(subscription)
-            }
-        }
-        
-        // 削除後に再度サブスクリプションデータをロード
-        share.loadSubscriptions()
-        dismiss()
-    }
-}
-
-

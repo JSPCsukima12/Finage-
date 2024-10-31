@@ -8,7 +8,7 @@ import AppTrackingTransparency
 @main
 struct finageApp: SwiftUI.App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @State private var shareContent = ShareContent()
+    @StateObject private var shareContent = ShareContent()
     @State private var isFirstLaunch: Bool = true
     @State private var isInitialSetupComplete: Bool = false
 
