@@ -76,6 +76,7 @@ struct AnalysisComponent: View {
                         // 記録があるときのみパーセンテージを表示
                         if total > 0 && data.1 > 0 { // パーセンテージが0より大きいときのみ表示
                             Text(String(format: "%.0f%%", data.1)) // パーセンテージを表示
+                                .bold()
                                 .font(.caption)
                                 .foregroundStyle(.black) // 色を設定
                         } else {
