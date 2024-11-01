@@ -54,7 +54,7 @@ struct CalendarView: View {
                     ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { day in
                         VStack(spacing: 4) {
                             Text(day)
-                                .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.black))
+                                .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.primary))
                                 .font(.subheadline)
                                 .frame(maxWidth: .infinity)
                             Rectangle()

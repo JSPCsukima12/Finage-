@@ -3,12 +3,12 @@ import SwiftUI
 struct ChangeColorView: View {
     @ObservedObject var share: ShareContent
     @State private var colorListDefault: [(String, Color)] = [
-        ("デフォルト", .green.opacity(0.4))
+        ("デフォルト", Color.green.opacity(0.4))
     ]
     @State private var colorListSeasons: [(String, Color)] = [
-        ("春", .pink.opacity(0.5)),
-        ("夏", .green.opacity(0.7)),
-        ("秋", .caramel.opacity(0.8)),
+        ("春", Color.pink.opacity(0.5)),
+        ("夏", Color.green.opacity(0.7)),
+        ("秋", Color.caramel.opacity(0.8)),
         ("冬", Color(red: 0.4, green: 0.6, blue: 0.8))
     ]
     
