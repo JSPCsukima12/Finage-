@@ -5,6 +5,8 @@ struct CalendarView: View {
     
     @State private var selectedDate = Date()
     @State private var currentMonth: Date = Date()
+    
+    @State private var methodDescription: [String] = ["現金払い", "クレジットカード", "QR決済", "電子マネー", "その他"]
 
     let calendar = Calendar.current
 
@@ -50,18 +52,18 @@ struct CalendarView: View {
 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7)) {
                     ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { day in
-                        VStack(spacing:4) {
+                        VStack(spacing: 4) {
                             Text(day)
                                 .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.black))
                                 .font(.subheadline)
                                 .frame(maxWidth: .infinity)
                             Rectangle()
-                                .frame(width:45,height:2)
+                                .frame(width: 45, height: 2)
                                 .foregroundStyle(day == "日" ? Color.red : (day == "土" ? Color.blue : Color.gray))
                         }
                     }
                 }
-                .padding(.horizontal,5.0)
+                .padding(.horizontal, 5.0)
 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7)) {
                     ForEach(0..<startDayOfWeek, id: \.self) { _ in
@@ -81,15 +83,15 @@ struct CalendarView: View {
                                 .onTapGesture {
                                     selectedDate = date
                                 }
-                            VStack(spacing:0) {
+                            VStack(spacing: 0) {
                                 if hasPaymentRecord(for: date) {
                                     Circle()
-                                        .foregroundStyle(.red)  // 支払いがある日は赤いサークル
+                                        .foregroundStyle(.red)
                                         .frame(width: 10, height: 10)
                                 }
                                 if hasIncomeRecord(for: date) {
                                     Circle()
-                                        .foregroundStyle(.blue)  // 収入がある日は青いサークル
+                                        .foregroundStyle(.blue)
                                         .frame(width: 10, height: 10)
                                 }
                             }
@@ -117,13 +119,13 @@ struct CalendarView: View {
                         Text("記録がありません")
                             .foregroundColor(.gray)
                     } else {
-                        ForEach(Array(share.paymentMethod.keys), id: \.self) { method in
-                            let totalAmount = calculateTotalAmount(for: method)
-                            let totalPoint = share.getTotalPointByMethod(method: method, date: selectedDate)
+                        ForEach(sortedPaymentMethods(), id: \.key) { method in
+                            let totalAmount = calculateTotalAmount(for: method.key)
+                            let totalPoint = share.getTotalPointByMethod(method: method.key, date: selectedDate)
                             if totalAmount != 0 {
-                                NavigationLink(destination: DetailView(share: share, genre: "出金", method: method, selectedDate: selectedDate)) {
+                                NavigationLink(destination: DetailView(share: share, genre: "出金", method: method.key, selectedDate: selectedDate)) {
                                     HStack {
-                                        Text(method)
+                                        Text(method.key)
                                         Spacer()
                                         Text("-\(totalAmount)円")
                                             .foregroundColor(.red)
@@ -131,7 +133,7 @@ struct CalendarView: View {
                                 }
                                 if totalPoint != 0 {
                                     HStack {
-                                        Text("\(method)ポイント")
+                                        Text("\(method.key)ポイント")
                                         Spacer()
                                         Text("+\(totalPoint)pt")
                                             .foregroundColor(.blue)
@@ -181,16 +183,25 @@ struct CalendarView: View {
             .reduce(0) { $0 + $1.amount }
     }
 
-    // 支払い記録があるか確認するメソッド
     func hasPaymentRecord(for date: Date) -> Bool {
         let records = share.getAllRecords()
         return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "出金" }
     }
 
-    // 収入記録があるか確認するメソッド
     func hasIncomeRecord(for date: Date) -> Bool {
         let records = share.getAllRecords()
         return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "入金" }
     }
+    
+    // 支払い方法をmethodDescriptionの順序に従ってソート
+    func sortedPaymentMethods() -> [(key: String, value: PaymentMethodDetail)] {
+        // methodDescriptionの順で支払い方法をソート
+        return share.paymentMethod.sorted { first, second in
+            let firstIndex = methodDescription.firstIndex(of: first.value.details) ?? Int.max
+            let secondIndex = methodDescription.firstIndex(of: second.value.details) ?? Int.max
+            
+            // methodDescriptionで定義された順序に従ってソート
+            return firstIndex < secondIndex
+        }
+    }
 }
-

@@ -29,6 +29,7 @@ struct finageApp: SwiftUI.App {
                         UserDefaults.standard.set(false, forKey: "isFirstLaunch")
                         requestNotificationPermission()
                         requestTrackingPermission()
+                        scheduleDailyNotification() // 通知のスケジュール
                     }
                 })
                 .transition(.opacity)
@@ -67,6 +68,28 @@ struct finageApp: SwiftUI.App {
             }
         }
     }
+    
+    func scheduleDailyNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "お知らせ"
+        content.body = "毎日の通知です！"
+        content.sound = .default
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = 18
+        dateComponents.minute = 0
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "DailyNotification", content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling daily notification: \(error)")
+            } else {
+                print("Daily notification scheduled for 18:00.")
+            }
+        }
+    }
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -95,10 +118,36 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // サブスクリプションの支払いを記録
         checkAndRecordSubscriptionPayments()
+
+        // 毎日18:00に通知をスケジュール
+        scheduleDailyNotification()
         return true
     }
 
     func checkAndRecordSubscriptionPayments() {
         shareContent.recordSubscriptionPayments() // 直接インスタンスを使用
+    }
+
+    // 毎日18:00に通知をスケジュールする関数
+    func scheduleDailyNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Finage+"
+        content.body = "今日の支出記録は済んでいますか?"
+        content.sound = .default
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = 18
+        dateComponents.minute = 0
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "DailyNotification", content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling daily notification: \(error)")
+            } else {
+                print("Daily notification scheduled for 18:00.")
+            }
+        }
     }
 }
