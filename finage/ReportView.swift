@@ -4,7 +4,11 @@ import Charts
 
 struct ReportView: View {
     @ObservedObject var share: ShareContent
-    
+    @State private var selectedMonth: String? // 選択された年月を保持する状態変数
+    private var months: [[Int]] {
+        return getRecordsMonth() // getRecordsMonth() を呼び出して年月を取得
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -15,16 +19,32 @@ struct ReportView: View {
                             .underline()
                         Spacer()
                     }
-                    AnalysisComponent(share: share)
-                    
+
+                    // selectedMonthがnilの場合、全期間を表示
+                    if selectedMonth == nil || selectedMonth == "全期間" {
+                        AnalysisComponent(share: share, year: -1, month: -1)
+                    } else {
+                        let components = selectedMonth!.split(separator: "年")
+                        if let year = Int(components[0]), let month = Int(components[1].prefix(2)) {
+                            AnalysisComponent(share: share, year: year, month: month)
+                        }
+                    }
+
                     HStack {
                         Text("支払い方法別使用金額")
                             .bold()
                             .underline()
                         Spacer()
                     }
-                    GraphComponent(share: share)
-                    
+                    if selectedMonth == nil || selectedMonth == "全期間" {
+                        GraphComponent(share: share,year:-1,month:-1)
+                    } else {
+                        let components = selectedMonth!.split(separator: "年")
+                        if let year = Int(components[0]), let month = Int(components[1].prefix(2)) {
+                            GraphComponent(share: share, year: year, month: month)
+                        }
+                    }
+
                     // 獲得ポイントセクションの表示条件
                     let hasEarningPoints = share.paymentMethod.values.contains { $0.earnsPoints }
                     if hasEarningPoints {
@@ -34,8 +54,16 @@ struct ReportView: View {
                                 .underline()
                             Spacer()
                         }
-                        let pointsByMethod = share.aggregatePointsByMethod()
-                        PointComponent(share: share, pointsByMethod: pointsByMethod)
+                        if selectedMonth == nil || selectedMonth == "全期間" {
+                            let pointsByMethod = share.aggregatePointsByMethod(year: -1, month: -1)
+                            PointComponent(share: share, pointsByMethod: pointsByMethod)
+                        } else {
+                            let components = selectedMonth!.split(separator: "年")
+                            if let year = Int(components[0]), let month = Int(components[1].prefix(2)) {
+                                let pointsByMethod = share.aggregatePointsByMethod(year: year, month: month)
+                                PointComponent(share: share, pointsByMethod: pointsByMethod)
+                            }
+                        }
                     }
                     Spacer(minLength: 20) // 必要に応じて高さを調整
                     BannerAdView()
@@ -44,25 +72,84 @@ struct ReportView: View {
                 }
                 .padding(5.0)
                 .navigationBarTitle("分析", displayMode: .inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button("全期間") {
+                                selectedMonth = "全期間"
+                            }
+                            ForEach(months, id: \.self) { month in
+                                let monthString = String(format: "%04d年%02d月", month[0], month[1])
+                                Button(monthString) {
+                                    selectedMonth = monthString
+                                }
+                            }
+                        } label: {
+                            HStack(spacing:0) {
+                                Image(systemName:"magnifyingglass")
+                                Text(selectedMonth ?? "全期間")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+
             }
         }
         .tint(.blue)
     }
-}
 
+    // 既存の getRecordsMonth() 関数
+    func getRecordsMonth() -> [[Int]] {
+        let realm = try! Realm()
+        
+        // Realmから全てのPaymentRecordを取得
+        let records = realm.objects(PaymentRecord.self)
+        
+        // 年月のセットを保持するためのセット
+        var monthsSet: Set<[Int]> = []
+        
+        // レコードから年月を抽出
+        for record in records {
+            let date = record.date
+            let calendar = Calendar.current
+            
+            // 年と月を取得
+            let year = calendar.component(.year, from: date)
+            let month = calendar.component(.month, from: date)
+            
+            // 年月の配列を作成
+            let monthArray = [year, month]
+            monthsSet.insert(monthArray) // 重複を避けるためセットに追加
+        }
+        
+        // セットを配列に変換してソート
+        let sortedMonths = monthsSet.sorted {
+            // 年でソートし、年が同じ場合は月でソート
+            if $0[0] == $1[0] {
+                return $0[1] > $1[1]
+            }
+            return $0[0] > $1[0]
+        }
+        
+        return sortedMonths
+    }
+}
 
 struct AnalysisComponent: View {
     @ObservedObject var share: ShareContent
+    let year: Int
+    let month: Int
 
     var body: some View {
-        let (income, expense) = share.calculateIncomeAndExpense()
+        let (income, expense) = share.calculateIncomeAndExpense(for: year, month: month)
         let total = income + expense
         
         // パーセンテージを計算
         let incomePercentage = total > 0 ? Double(income) / Double(total) * 100 : 0
         let expensePercentage = total > 0 ? Double(expense) / Double(total) * 100 : 0
         
-        let incomeExpenseData: [(String, Double)] = total > 0 ? [("支出", expensePercentage), ("収入", incomePercentage)] : [("支出", 100), ("収入", 0)] // 記録がない場合、支出を100%に
+        let incomeExpenseData: [(String, Double)] = total > 0 ? [("支出", expensePercentage), ("収入", incomePercentage)] : [("支出", 100), ("収入", 0)]
         
         VStack {
             // グラフ
@@ -72,31 +159,29 @@ struct AnalysisComponent: View {
                         x: .value("Amount", data.1)
                     )
                     .foregroundStyle(total == 0 ? .gray.opacity(0.6) : (data.0 == "収入" ? .blue.opacity(0.7) : .red.opacity(0.9)))
-                    .annotation(position:.overlay) {
-                        // 記録があるときのみパーセンテージを表示
-                        if total > 0 && data.1 > 0 { // パーセンテージが0より大きいときのみ表示
-                            Text(String(format: "%.0f%%", data.1)) // パーセンテージを表示
+                    .annotation(position: .overlay) {
+                        if total > 0 && data.1 > 0 {
+                            Text(String(format: "%.0f%%", data.1))
                                 .bold()
                                 .font(.caption)
-                                .foregroundStyle(.black) // 色を設定
+                                .foregroundStyle(.black)
                         } else {
-                            EmptyView() // 記録がない場合は何も表示しない
+                            EmptyView()
                         }
                     }
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: 20)) { value in
-                    // ラベルをパーセント表示
-                    if let percentage = value.as(Double.self) {
+                AxisMarks(values: .stride(by: 20)) {
+                    if let percentage = $0.as(Double.self) {
                         AxisValueLabel("\(Int(percentage))%")
                     }
                 }
             }
-            .chartYAxis(.hidden) // Y軸を非表示にする
-            .frame(height: 50) // グラフの高さを設定
+            .chartYAxis(.hidden)
+            .frame(height: 50)
 
-            // 凡例 (レジェンド)
+            // 凡例
             HStack(spacing: 10) {
                 HStack(spacing: 3) {
                     Circle()
@@ -123,9 +208,13 @@ struct AnalysisComponent: View {
 }
 
 
+
+
 struct GraphComponent: View {
     @ObservedObject var share: ShareContent
     @State private var methodDescription: [String] = ["現金払い", "クレジットカード", "QR決済", "電子マネー", "その他"]
+    let year: Int
+    let month: Int
 
     private let colorMapping: [String: Color] = [
         "現金払い": .yellow.opacity(0.5),
@@ -149,7 +238,7 @@ struct GraphComponent: View {
         VStack(spacing: 0) {
             Chart {
                 ForEach(sortedPaymentMethods(), id: \.key) { method in
-                    let fee = feeForMethod(method: method.key)
+                    let fee = feeForMethod(method: method.key, year: year, month: month)
                     let description = method.value.details
 
                     BarMark(
@@ -204,13 +293,37 @@ struct GraphComponent: View {
         .padding(.horizontal, 6.0)
     }
     
-    func feeForMethod(method: String) -> Double {
-        return share.methodData
-            .filter { $0.paymentName == method }
-            .compactMap { Double($0.fee) }
-            .reduce(0, +)
+    func feeForMethod(method: String, year: Int, month: Int) -> Double {
+        let realm = try! Realm()
+        
+        // 全期間を対象にする場合
+        if year == -1 && month == -1 {
+            // methodだけでフィルタ
+            let allRecords = realm.objects(PaymentRecord.self).filter("method == %@", method)
+            return allRecords.compactMap { Double($0.amount) }.reduce(0, +)
+        }
+        // 年のみ指定する場合
+        else if year != -1 && month == -1 {
+            // methodとyearでフィルタ
+            let recordsByYear = realm.objects(PaymentRecord.self).filter { record in
+                let calendar = Calendar.current
+                return record.method == method && calendar.component(.year, from: record.date) == year
+            }
+            return recordsByYear.compactMap { Double($0.amount) }.reduce(0, +)
+        }
+        // 年月指定の場合
+        else {
+            // methodとyear、monthでフィルタ
+            let filteredRecords = realm.objects(PaymentRecord.self).filter { record in
+                let calendar = Calendar.current
+                let recordYear = calendar.component(.year, from: record.date)
+                let recordMonth = calendar.component(.month, from: record.date)
+                return record.method == method && recordYear == year && recordMonth == month
+            }
+            return filteredRecords.compactMap { Double($0.amount) }.reduce(0, +)
+        }
     }
-    
+
     func sortedPaymentMethods() -> [(key: String, value: PaymentMethodDetail)] {
         return share.paymentMethod.sorted { first, second in
             let firstIndex = methodDescription.firstIndex(of: first.value.details) ?? Int.max
@@ -231,7 +344,6 @@ struct PointComponent: View {
             GridItem(.fixed(180))
         ]
         
-        // Sort pointsByMethod by methodDescription and maintain all methods separately
         let sortedMethods = pointsByMethod.keys.sorted { (method1, method2) -> Bool in
             let detail1 = share.paymentMethod[method1]?.details ?? ""
             let detail2 = share.paymentMethod[method2]?.details ?? ""

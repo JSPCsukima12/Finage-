@@ -247,15 +247,39 @@ class ShareContent: ObservableObject {
         return totalPoints
     }
     
-    func calculateIncomeAndExpense() -> (totalIncome: Int, totalExpense: Int) {
+    func calculateIncomeAndExpense(for year: Int, month: Int) -> (totalIncome: Int, totalExpense: Int) {
         let realm = try! Realm()
-
+        
         // 全ての支払い記録を取得
         let allRecords = realm.objects(PaymentRecord.self)
 
         // 収入と支出をそれぞれ集計
-        let totalIncome = allRecords.filter("type == '入金'").reduce(0) { $0 + $1.amount }
-        let totalExpense = allRecords.filter("type == '出金'").reduce(0) { $0 + $1.amount }
+        let totalIncome: Int
+        let totalExpense: Int
+        
+        if year == -1 && month == -1 {
+            // 全期間の場合
+            totalIncome = allRecords
+                .filter("type == '入金'")
+                .reduce(0) { $0 + $1.amount }
+            
+            totalExpense = allRecords
+                .filter("type == '出金'")
+                .reduce(0) { $0 + $1.amount }
+        } else {
+            // 年と月を基準にフィルタリング
+            let calendar = Calendar.current
+            let startDate = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
+            let endDate = calendar.date(from: DateComponents(year: year, month: month + 1, day: 1))!
+
+            totalIncome = allRecords
+                .filter("type == '入金' AND date >= %@ AND date < %@", startDate as NSDate, endDate as NSDate)
+                .reduce(0) { $0 + $1.amount }
+
+            totalExpense = allRecords
+                .filter("type == '出金' AND date >= %@ AND date < %@", startDate as NSDate, endDate as NSDate)
+                .reduce(0) { $0 + $1.amount }
+        }
 
         return (totalIncome, totalExpense)
     }
@@ -307,19 +331,31 @@ class ShareContent: ObservableObject {
         return rankingData
     }
     
-    func aggregatePointsByMethod() -> [String: Int] {
+    func aggregatePointsByMethod(year: Int, month: Int) -> [String: Int] {
         // 全ての記録を取得
         let records = getAllRecords()
         
         // 支払い方法ごとにポイントを集計する辞書を作成
         var pointsByMethod: [String: Int] = [:]
 
-        // 全ての記録を処理してポイントを集計
+        // 指定された年月でフィルタリングされた記録を処理してポイントを集計
         for record in records {
+            let calendar = Calendar.current
+            
+            // recordの日付を取得
+            let recordYear = calendar.component(.year, from: record.date)
+            let recordMonth = calendar.component(.month, from: record.date)
+
+            // 指定された年月と一致しない場合はスキップ
+            if (year != -1 && recordYear != year) || (month != -1 && recordMonth != month) {
+                continue
+            }
+
             // incomeMethodに含まれるもの、またはpaymentMethodでearnPointsがfalseの場合はスキップ
             if incomeMethod.contains(record.method) || (paymentMethod[record.method]?.earnsPoints == false) {
                 continue
             }
+            
             pointsByMethod[record.method, default: 0] += record.points
         }
 
@@ -332,6 +368,7 @@ class ShareContent: ObservableObject {
         
         return pointsByMethod
     }
+
 
     // 支払い手段に応じたアイコンを取得するメソッド
     func methodToImageName(_ method: String) -> String {
