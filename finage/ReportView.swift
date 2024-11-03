@@ -231,8 +231,8 @@ struct GraphComponent: View {
     ]
 
     var body: some View {
-        let maxFee = share.methodData
-            .compactMap { Double($0.fee) }
+        let maxFee = sortedPaymentMethods()
+            .map { feeForMethod(method: $0.key, year: year, month: month) }
             .max() ?? 0
 
         VStack(spacing: 0) {
@@ -254,7 +254,7 @@ struct GraphComponent: View {
                     }
                 }
             }
-            .chartYScale(domain: 0...(maxFee + 1000))
+            .chartYScale(domain: 0...(1.5 * maxFee + 100))
             .chartXAxis {
                 AxisMarks(values: .automatic) { _ in
                     AxisTick(stroke: StrokeStyle(lineWidth: 1))
