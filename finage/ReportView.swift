@@ -149,24 +149,46 @@ struct AnalysisComponent: View {
         let incomePercentage = total > 0 ? Double(income) / Double(total) * 100 : 0
         let expensePercentage = total > 0 ? Double(expense) / Double(total) * 100 : 0
         
-        let incomeExpenseData: [(String, Double)] = total > 0 ? [("支出", expensePercentage), ("収入", incomePercentage)] : [("支出", 100), ("収入", 0)]
-        
         VStack {
             // グラフ
             Chart {
-                ForEach(incomeExpenseData, id: \.0) { data in
+                // 支出部分のBarMark
+                if expensePercentage > 0 {
                     BarMark(
-                        x: .value("Amount", data.1)
+                        xStart: .value("Start", 0),
+                        xEnd: .value("Expense", expensePercentage)
                     )
-                    .foregroundStyle(total == 0 ? .gray.opacity(0.6) : (data.0 == "収入" ? .blue.opacity(0.7) : .red.opacity(0.9)))
+                    .foregroundStyle(.red.opacity(0.9))
                     .annotation(position: .overlay) {
-                        if total > 0 && data.1 > 0 {
-                            Text(String(format: "%.0f%%", data.1))
+                        if expensePercentage > 5 {
+                            Text("\(Int(expensePercentage))%")
                                 .bold()
                                 .font(.caption)
                                 .foregroundStyle(.black)
-                        } else {
-                            EmptyView()
+                        }
+                    }
+                }
+
+                // 境界線
+                if expensePercentage > 0 && incomePercentage > 0 {
+                    RuleMark(x: .value("Boundary", expensePercentage))
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .foregroundStyle(.black)
+                }
+
+                // 収入部分のBarMark
+                if incomePercentage > 0 {
+                    BarMark(
+                        xStart: .value("Start", expensePercentage),
+                        xEnd: .value("Income", 100)
+                    )
+                    .foregroundStyle(.blue.opacity(0.7))
+                    .annotation(position: .overlay) {
+                        if incomePercentage > 5 {
+                            Text("\(Int(incomePercentage))%")
+                                .bold()
+                                .font(.caption)
+                                .foregroundStyle(.black)
                         }
                     }
                 }
@@ -206,8 +228,6 @@ struct AnalysisComponent: View {
         }
     }
 }
-
-
 
 
 struct GraphComponent: View {
