@@ -172,7 +172,7 @@ struct AnalysisComponent: View {
                 // 境界線
                 if expensePercentage > 0 && incomePercentage > 0 {
                     RuleMark(x: .value("Boundary", expensePercentage))
-                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
                         .foregroundStyle(.black)
                 }
 

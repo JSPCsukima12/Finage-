@@ -7,6 +7,8 @@ struct CalendarView: View {
     @State private var currentMonth: Date = Date()
     
     @State private var methodDescription: [String] = ["現金払い", "クレジットカード", "QR決済", "電子マネー", "その他"]
+    @State private var selectMethodKey: String?
+    @State private var selectMethodValue: String?
 
     let calendar = Calendar.current
 
@@ -84,12 +86,18 @@ struct CalendarView: View {
                                     selectedDate = date
                                 }
                             VStack(spacing: 0) {
-                                if hasPaymentRecord(for: date) {
+                                if hasPaymentRecord(for:date,method:selectMethodKey ?? "すべて") {
                                     Circle()
                                         .foregroundStyle(.red)
                                         .frame(width: 10, height: 10)
+                                } else {
+                                    if hasPaymentRecord(for:date,method:"すべて") {
+                                        Circle()
+                                            .foregroundStyle(.red.opacity(0.3))
+                                            .frame(width: 10, height: 10)
+                                    }
                                 }
-                                if hasIncomeRecord(for: date) {
+                                if hasIncomeRecord(for:date,method:selectMethodKey ?? "すべて") {
                                     Circle()
                                         .foregroundStyle(.blue)
                                         .frame(width: 10, height: 10)
@@ -116,51 +124,107 @@ struct CalendarView: View {
                     let totalIncomeAmount = share.incomeMethod.reduce(0) { $0 + calculateTotalAmount(for: $1) }
                     
                     if totalPaymentAmount == 0 && totalIncomeAmount == 0 {
-                        Text("記録がありません")
+                        Text("この日の記録はありません")
                             .foregroundColor(.gray)
                     } else {
-                        ForEach(sortedPaymentMethods(), id: \.key) { method in
-                            let totalAmount = calculateTotalAmount(for: method.key)
-                            let totalPoint = share.getTotalPointByMethod(method: method.key, date: selectedDate)
-                            if totalAmount != 0 {
-                                NavigationLink(destination: DetailView(share: share, genre: "出金", method: method.key, selectedDate: selectedDate)) {
-                                    HStack {
-                                        Text(method.key)
-                                        Spacer()
-                                        Text("-\(totalAmount)円")
-                                            .foregroundColor(.red)
+                        // "すべて"の場合の処理
+                        if selectMethodKey == "すべて" || selectMethodKey == nil {
+                            ForEach(share.paymentMethod.sorted(by: { $0.key < $1.key }), id: \.key) { method in
+                                let totalAmount = calculateTotalAmount(for: method.key)
+                                let totalPoint = share.getTotalPointByMethod(method: method.key, date: selectedDate)
+                                if totalAmount != 0 {
+                                    NavigationLink(destination: DetailView(share: share, genre: "出金", method: method.key, selectedDate: selectedDate)) {
+                                        HStack {
+                                            Text(method.key)
+                                            Spacer()
+                                            Text("-\(totalAmount)円")
+                                                .foregroundColor(.red)
+                                        }
                                     }
-                                }
-                                if totalPoint != 0 {
-                                    HStack {
-                                        Text("\(method.key)ポイント")
-                                        Spacer()
-                                        Text("+\(totalPoint)pt")
-                                            .foregroundColor(.blue)
+                                    if totalPoint != 0 {
+                                        HStack {
+                                            Text("\(method.key)ポイント")
+                                            Spacer()
+                                            Text("+\(totalPoint)pt")
+                                                .foregroundColor(.blue)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        
-                        ForEach(share.incomeMethod, id: \.self) { method in
-                            let totalAmount = calculateTotalAmount(for: method)
-                            if totalAmount != 0 {
-                                NavigationLink(destination: DetailView(share: share, genre: "入金", method: method, selectedDate: selectedDate)) {
-                                    HStack {
-                                        Text(method)
-                                        Spacer()
-                                        Text("+\(totalAmount)円")
-                                            .foregroundColor(.blue)
+                            
+                            ForEach(share.incomeMethod, id: \.self) { method in
+                                let totalAmount = calculateTotalAmount(for: method)
+                                if totalAmount != 0 {
+                                    NavigationLink(destination: DetailView(share: share, genre: "入金", method: method, selectedDate: selectedDate)) {
+                                        HStack {
+                                            Text(method)
+                                            Spacer()
+                                            Text("+\(totalAmount)円")
+                                                .foregroundColor(.blue)
+                                        }
                                     }
+                                }
+                            }
+                        } else {
+                            // 個別の支払い方法の場合の処理
+                            if let selectedMethod = selectMethodKey {
+                                let totalAmount = calculateTotalAmount(for: selectedMethod)
+                                let records = share.getRecordsByMethod(genre:"出金", method: selectedMethod, on: selectedDate)
+                                if totalAmount != 0 {
+                                    ForEach(records, id: \.id) { record in
+                                        HStack {
+                                            Text(record.memo.isEmpty ? "Unknown" : record.memo)
+                                            Spacer()
+                                            Text("\(record.amount)円")
+                                                .foregroundColor(record.type == "出金" ? .red : .blue)
+                                        }
+                                        if record.points != 0 {
+                                            HStack {
+                                                Text("---獲得ポイント:")
+                                                Spacer()
+                                                Text("\(record.points)pt")
+                                                    .foregroundStyle(.blue)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text("\(selectedMethod)の記録はありません")
+                                        .foregroundStyle(.gray)
                                 }
                             }
                         }
                     }
                 }
+
                 .listStyle(PlainListStyle())
                 Spacer()
             }
             .navigationBarTitle("カレンダー", displayMode: .inline)
+            .toolbar {
+                Menu {
+                    // すべてボタンを追加
+                    Button("すべて") {
+                        selectMethodKey = "すべて"
+                        selectMethodValue = nil // "すべて"の場合、値は特に必要ないのでnilに設定
+                    }
+                    
+                    ForEach(sortedPaymentMethods(), id: \.key) { element in
+                        Button(element.key) {
+                            selectMethodKey = element.key
+                            selectMethodValue = element.value.details
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 0) {
+                        if selectMethodKey != "すべて" && selectMethodKey != nil {
+                            Image(systemName: share.methodToImageName(selectMethodValue ?? ""))
+                        }
+                        Text(selectMethodKey ?? "すべて")
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+
         }
         .tint(.blue)
     }
@@ -183,14 +247,22 @@ struct CalendarView: View {
             .reduce(0) { $0 + $1.amount }
     }
 
-    func hasPaymentRecord(for date: Date) -> Bool {
+    func hasPaymentRecord(for date: Date, method: String) -> Bool {
         let records = share.getAllRecords()
-        return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "出金" }
+        if method == "すべて" {
+            return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "出金"}
+        } else {
+            return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "出金" && $0.method == method }
+        }
     }
 
-    func hasIncomeRecord(for date: Date) -> Bool {
+    func hasIncomeRecord(for date: Date, method: String) -> Bool {
         let records = share.getAllRecords()
-        return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "入金" }
+        if method == "すべて" {
+            return records.contains { Calendar.current.isDate($0.date, inSameDayAs: date) && $0.type == "入金" }
+        } else {
+            return false
+        }
     }
     
     // 支払い方法をmethodDescriptionの順序に従ってソート
