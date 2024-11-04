@@ -110,7 +110,7 @@ struct SettingView: View {
                         Image(systemName: "applescript.fill")
                         Text("バージョン:")
                         Spacer()
-                        Text("1.2")
+                        Text("1.3")
                     }
                 }
             }
