@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 import RealmSwift
 
+//Realmデータ
 class PaymentRecord: Object {
     @Persisted(primaryKey: true) var id: ObjectId  // 一意のID
     @Persisted var date: Date = Date()             // 日付
@@ -12,6 +13,7 @@ class PaymentRecord: Object {
     @Persisted var points: Int = 0                 // 獲得ポイントを保存するプロパティ
 }
 
+//Realmデータ
 class SubscriptionData: Object {
     @Persisted(primaryKey: true) var id: ObjectId  // 一意のID
     @Persisted var name: String = ""               // サブスクネーム
@@ -24,8 +26,6 @@ class SubscriptionData: Object {
 }
 
 
-
-// 支払い方法の詳細を持つ構造体
 struct PaymentMethodDetail {
     var method: String           // 支払い方法
     var details: String          // 支払い詳細

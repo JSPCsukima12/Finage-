@@ -50,6 +50,6 @@ struct BannerAdView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        // 必要であればここに更新処理を記述
+        
     }
 }

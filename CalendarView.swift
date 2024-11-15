@@ -129,7 +129,7 @@ struct CalendarView: View {
                     } else {
                         // "すべて"の場合の処理
                         if selectMethodKey == "すべて" || selectMethodKey == nil {
-                            ForEach(share.paymentMethod.sorted(by: { $0.key < $1.key }), id: \.key) { method in
+                            ForEach(sortedPaymentMethods(), id: \.key) { method in
                                 let totalAmount = calculateTotalAmount(for: method.key)
                                 let totalPoint = share.getTotalPointByMethod(method: method.key, date: selectedDate)
                                 if totalAmount != 0 {

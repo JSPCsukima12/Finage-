@@ -30,19 +30,6 @@
 		AB02FF44F1BE1DAB9B48BD28 /* Pods_finage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FEE2934F94A068ACF10FEA5 /* Pods_finage.framework */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		5381A2222CC8BEF200553A23 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		1C4869959F76E7079C322639 /* Pods-finage.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-finage.debug.xcconfig"; path = "Target Support Files/Pods-finage/Pods-finage.debug.xcconfig"; sourceTree = "<group>"; };
 		3FEE2934F94A068ACF10FEA5 /* Pods_finage.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_finage.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -69,6 +56,7 @@
 		53A3BFA32CCB43D500CBE00F /* Realm.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Realm.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		53A3BFA52CCB43DC00CBE00F /* RealmSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RealmSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		53A3BFA92CCB60A900CBE00F /* RealmSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RealmSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		53F7A9D12CDAFAA100592A95 /* CalculateCalendarLogic.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CalculateCalendarLogic.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9916CC86E2756BCBDD07803B /* Pods-finage.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-finage.release.xcconfig"; path = "Target Support Files/Pods-finage/Pods-finage.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -150,6 +138,7 @@
 		8C868001CECEB7EA4A46ACB6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				53F7A9D12CDAFAA100592A95 /* CalculateCalendarLogic.framework */,
 				53A3BFA92CCB60A900CBE00F /* RealmSwift.framework */,
 				53A3BFA52CCB43DC00CBE00F /* RealmSwift.framework */,
 				53A3BFA32CCB43D500CBE00F /* Realm.framework */,
@@ -169,7 +158,6 @@
 				53558B562CB8F59400BC5B25 /* Sources */,
 				53558B572CB8F59400BC5B25 /* Frameworks */,
 				53558B582CB8F59400BC5B25 /* Resources */,
-				5381A2222CC8BEF200553A23 /* Embed Frameworks */,
 				988A227E69E33275D5790DA3 /* [CP] Embed Pods Frameworks */,
 				5257F95311460951AD743362 /* [CP] Copy Pods Resources */,
 			);
@@ -460,6 +448,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -467,7 +456,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = TeraSho.finage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -500,6 +489,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -507,7 +497,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = TeraSho.finage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

@@ -6,10 +6,9 @@ import UserNotifications
 struct SettingView: View {
     @ObservedObject var share: ShareContent
     
-    @State private var showAlert = false // アラート表示のトリガー
-    @State private var notificationsEnabled = false // 通知の許可状況
-    @State private var notificationTime = Date() // 通知の時間
-
+    @State private var showAlert = false
+    @State private var notificationsEnabled = false
+    @State private var notificationTime = Date()
     var body: some View {
         NavigationStack {
             Form {
@@ -31,7 +30,7 @@ struct SettingView: View {
                     NavigationLink(destination: RegistSubscriptionView(share: share)) {
                         HStack {
                             Image(systemName: "music.note.list")
-                            Text("サブスクの登録/編集")
+                            Text("サブスクの登録/削除")
                         }
                     }
                 }
