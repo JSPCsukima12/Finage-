@@ -45,9 +45,9 @@
 		53558B5F2CB8F59400BC5B25 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		53558B612CB8F59700BC5B25 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		53558B642CB8F59700BC5B25 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		53558B6B2CB8F62500BC5B25 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = SOURCE_ROOT; };
+		53558B6B2CB8F62500BC5B25 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarView.swift; path = finage/MainView/CalendarView.swift; sourceTree = SOURCE_ROOT; };
 		53558B6D2CB8F6D700BC5B25 /* ShareContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareContent.swift; sourceTree = "<group>"; };
-		53558B6F2CB8F79300BC5B25 /* RecordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordView.swift; sourceTree = SOURCE_ROOT; };
+		53558B6F2CB8F79300BC5B25 /* RecordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecordView.swift; path = finage/MainView/RecordView.swift; sourceTree = SOURCE_ROOT; };
 		53558B742CB90A0400BC5B25 /* AddMethod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMethod.swift; sourceTree = "<group>"; };
 		53558B762CB95F3C00BC5B25 /* SettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingView.swift; sourceTree = "<group>"; };
 		53558B782CB9FC8100BC5B25 /* ReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportView.swift; sourceTree = "<group>"; };
@@ -74,6 +74,50 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		530FCE112CE9E62900D97112 /* MainView */ = {
+			isa = PBXGroup;
+			children = (
+				53558B5D2CB8F59400BC5B25 /* finageApp.swift */,
+				53558B5F2CB8F59400BC5B25 /* ContentView.swift */,
+				53558B6F2CB8F79300BC5B25 /* RecordView.swift */,
+				53558B782CB9FC8100BC5B25 /* ReportView.swift */,
+				53558B6B2CB8F62500BC5B25 /* CalendarView.swift */,
+				53558B762CB95F3C00BC5B25 /* SettingView.swift */,
+			);
+			path = MainView;
+			sourceTree = "<group>";
+		};
+		530FCE122CE9E64A00D97112 /* NavigationView */ = {
+			isa = PBXGroup;
+			children = (
+				53558B742CB90A0400BC5B25 /* AddMethod.swift */,
+				533552C92CBD308700082049 /* PointDetailView.swift */,
+				53558B7A2CBA718900BC5B25 /* DetailView.swift */,
+				533552CB2CC083D800082049 /* ChangeColorView.swift */,
+				533552CF2CC0FC8500082049 /* RegistSubscriptionView.swift */,
+				533552CD2CC0B53D00082049 /* PrivacyPolicyView.swift */,
+			);
+			path = NavigationView;
+			sourceTree = "<group>";
+		};
+		530FCE132CE9E69100D97112 /* OtherView */ = {
+			isa = PBXGroup;
+			children = (
+				533552D12CC761D500082049 /* InitialSetupView.swift */,
+				533552D32CC7CCE900082049 /* LaunchView.swift */,
+				533552C72CBCFB4900082049 /* BannerAdView.swift */,
+			);
+			path = OtherView;
+			sourceTree = "<group>";
+		};
+		530FCE142CE9E6DD00D97112 /* CommonData */ = {
+			isa = PBXGroup;
+			children = (
+				53558B6D2CB8F6D700BC5B25 /* ShareContent.swift */,
+			);
+			path = CommonData;
+			sourceTree = "<group>";
+		};
 		53558B512CB8F59400BC5B25 = {
 			isa = PBXGroup;
 			children = (
@@ -96,22 +140,10 @@
 			isa = PBXGroup;
 			children = (
 				53558B7C2CBCC5E300BC5B25 /* Info.plist */,
-				53558B6F2CB8F79300BC5B25 /* RecordView.swift */,
-				53558B6D2CB8F6D700BC5B25 /* ShareContent.swift */,
-				53558B6B2CB8F62500BC5B25 /* CalendarView.swift */,
-				53558B5D2CB8F59400BC5B25 /* finageApp.swift */,
-				53558B5F2CB8F59400BC5B25 /* ContentView.swift */,
-				53558B742CB90A0400BC5B25 /* AddMethod.swift */,
-				533552CB2CC083D800082049 /* ChangeColorView.swift */,
-				533552CD2CC0B53D00082049 /* PrivacyPolicyView.swift */,
-				53558B7A2CBA718900BC5B25 /* DetailView.swift */,
-				533552C92CBD308700082049 /* PointDetailView.swift */,
-				533552D32CC7CCE900082049 /* LaunchView.swift */,
-				53558B762CB95F3C00BC5B25 /* SettingView.swift */,
-				533552C72CBCFB4900082049 /* BannerAdView.swift */,
-				53558B782CB9FC8100BC5B25 /* ReportView.swift */,
-				533552D12CC761D500082049 /* InitialSetupView.swift */,
-				533552CF2CC0FC8500082049 /* RegistSubscriptionView.swift */,
+				530FCE142CE9E6DD00D97112 /* CommonData */,
+				530FCE132CE9E69100D97112 /* OtherView */,
+				530FCE122CE9E64A00D97112 /* NavigationView */,
+				530FCE112CE9E62900D97112 /* MainView */,
 				53558B612CB8F59700BC5B25 /* Assets.xcassets */,
 				53558B632CB8F59700BC5B25 /* Preview Content */,
 			);
