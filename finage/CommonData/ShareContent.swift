@@ -50,12 +50,6 @@ class ShareContent: ObservableObject {
         }
     }
     
-    @Published var alertBool: Bool = false {
-        didSet {
-            saveAlertBool()  
-        }
-    }
-    
     @Published var paymentRecords: [PaymentRecord] = []
     @Published var methodData: [RankingData] = []
     @Published var detailData: [RankingData] = []
@@ -78,24 +72,12 @@ class ShareContent: ObservableObject {
     init() {
         loadPaymentMethod()
         loadIncomeMethod()
-        loadRankingData()
         loadThemeColor()
         loadSubscriptions()
-        loadAlertBool()
     }
 
     deinit {
         notificationToken?.invalidate() // オブジェクト解放時に監視を停止
-    }
-    
-    
-    private func saveAlertBool() {
-        UserDefaults.standard.set(alertBool, forKey: alertBoolUserDefaultsKey)
-    }
-    
-    // Load alertBool from UserDefaults
-    private func loadAlertBool() {
-        alertBool = UserDefaults.standard.bool(forKey: alertBoolUserDefaultsKey)  // Default is false
     }
     
     func saveThemeColor() {
@@ -214,23 +196,6 @@ class ShareContent: ObservableObject {
         
         try! realm.write {
             realm.delete(realm.objects(PaymentRecord.self))
-        }
-    }
-    
-    // ランキングデータをリアルタイムで取得・更新する
-    func loadRankingData() {
-        let realm = try! Realm()
-        let results = realm.objects(PaymentRecord.self)
-        
-        // リアルタイムで変更を監視
-        notificationToken = results.observe { [weak self] _ in
-            guard let self = self else { return }
-            let methodData = self.generateRankingData(from: results, test: 0)
-            let detailData = self.generateRankingData(from: results, test: 1)
-            DispatchQueue.main.async {
-                self.methodData = methodData
-                self.detailData = detailData
-            }
         }
     }
     
